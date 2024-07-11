@@ -49,6 +49,3 @@ def seed_data():
     if __name__ == '__main__':
         seed_data() 
 
-
-# def generate_password_hash(password):
-#     return generate_password_hash(password)

@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 class Applicant(db.Model):
+    __tablename__ = 'applicants'
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True,nullable=False)
     email = db.Column(db.String(120),unique=True, nullable = False)
@@ -12,6 +14,8 @@ class Applicant(db.Model):
     applications = db.relationship('Application', backref='applicant', lazy=True)
 
 class Job(db.Model):
+    __tabllename__ ='jobs' 
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -22,6 +26,8 @@ class Job(db.Model):
     reviews=db.relationship('Review', backref='job', lazy=True)
 
 class Application(db.Model):
+    __tablename__ = 'applicants'
+
     id = db.Column(db.Integer, primary_key=True)
     user_id=db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     job_id=db.Column(db.Integer, db.ForeignKey('job.id'), nullable=False)

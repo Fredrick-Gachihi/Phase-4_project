@@ -1,4 +1,4 @@
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, jsonify
 from flask_migrate import Migrate
 from flask_restful import Api, Resource
 from flask_bcrypt import Bcrypt
@@ -6,28 +6,28 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from flask_cors import CORS
 
 from datetime import datetime
-from models import db, Applicant, Job ,Application
+from models import db, Applicant, Job, Application
 
-#Initialize the Flask Application
+# Initialize the Flask Application
 app = Flask(__name__)
 
-#Configure the database
+# Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///job_portal.db'  
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = "super-secret"
 
-#Allow requests from all the origins
+# Allow requests from all the origins
 CORS(app)
 
-bcrypt=Bcrypt(app)
-jwt=JWTManager(app)
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
-
-migrate= Migrate(app, db)
+migrate = Migrate(app, db)
 db.init_app(app)
 
 api = Api(app)
 
+# Index Resource
 class Index(Resource):
     def get(self):
         body = {"index": "Welcome to JobDeed!"}
@@ -35,11 +35,9 @@ class Index(Resource):
 
 api.add_resource(Index, '/')
 
+# Applicants Resource
 class Applicants(Resource):
-    # @jwt_required()
     def get(self):
-        # current_applicant = get_jwt_identity()
-        # print(current_applicant)
         applicants = Applicant.query.all()
         applicants_list = [applicant.to_dict() for applicant in applicants]
 
@@ -51,11 +49,9 @@ class Applicants(Resource):
         return make_response(body, 200)
     
     def post(self):
-        #check if email is already taken 
-        email = Applicant.query.filter_by(email=request.json.get('email')).first();
-
+        email = Applicant.query.filter_by(email=request.json.get('email')).first()
         if email:
-            return make_response ({"message":"Email already taken"}, 422)
+            return make_response({"message": "Email already taken"}, 422)
 
         password = request.json.get("password")
         if not password:
@@ -82,25 +78,21 @@ class Applicants(Resource):
 
 api.add_resource(Applicants, '/applicants')
 
+# Applicant Resource
 class ApplicantResource(Resource):
     def get(self, id):
         applicant = Applicant.query.get(id)
-
         if applicant is None:
             return {"message": "Applicant not found"}, 404
-
         return applicant.to_dict(), 200
-
 
     def patch(self, id):
         applicant = Applicant.query.filter_by(id=id).first()
-
         if not applicant:
             return {"message": "Applicant not found"}, 404
 
         for attr in request.json:
             if attr == 'created_at':
-                
                 try:
                     date_value = datetime.fromisoformat(request.json.get(attr))
                     setattr(applicant, attr, date_value)
@@ -114,10 +106,8 @@ class ApplicantResource(Resource):
 
         return applicant.to_dict(), 200
 
-
     def delete(self, id):
         applicant = Applicant.query.get(id)
-
         if not applicant:
             return {"message": "Applicant not found"}, 404
         
@@ -132,6 +122,7 @@ class ApplicantResource(Resource):
 
 api.add_resource(ApplicantResource, '/applicants/<int:id>')
 
+# Jobs Resource
 class Jobs(Resource):
     def get(self):
         jobs = Job.query.all()
@@ -162,18 +153,16 @@ class Jobs(Resource):
 
 api.add_resource(Jobs, '/jobs')
 
+# Job Resource
 class JobResource(Resource):
     def get(self, id):
         job = Job.query.get(id)
-
         if job is None:
             return {"message": "Job not found"}, 404
-
         return job.to_dict(), 200
 
     def patch(self, id):
         job = Job.query.filter_by(id=id).first()
-
         if not job:
             return {"message": "Job not found"}, 404
 
@@ -194,12 +183,10 @@ class JobResource(Resource):
 
     def delete(self, id):
         job = Job.query.get(id)
-
         if not job:
             return {"message": "Job not found"}, 404
         
-        applications=Application.query.filter_by(job_id=id).all()
-
+        applications = Application.query.filter_by(job_id=id).all()
         for application in applications:
             db.session.delete(application)
 
@@ -210,6 +197,7 @@ class JobResource(Resource):
 
 api.add_resource(JobResource, '/jobs/<int:id>')
 
+# Applications Resource
 class Applications(Resource):
     def get(self):
         applications = Application.query.all()
@@ -223,7 +211,6 @@ class Applications(Resource):
         return make_response(body, 200)
 
     def post(self):
-        
         date_applied_str = request.json.get("date_applied")
         if date_applied_str:
             try:
@@ -232,7 +219,6 @@ class Applications(Resource):
                 return {"message": "Invalid datetime format for 'date_applied'"}, 400
         else:
             date_applied = datetime.now()
-        
 
         new_application = Application(
             applicant_id=request.json.get("applicant_id"),
@@ -250,18 +236,16 @@ class Applications(Resource):
 
 api.add_resource(Applications, '/applications')
 
+# Application Detail Resource
 class ApplicationDetailResource(Resource):
     def get(self, id):
         application = Application.query.get(id)
-
         if application is None:
             return {"message": "Application not found"}, 404
-
         return application.to_dict(), 200
 
     def patch(self, id):
         application = Application.query.filter_by(id=id).first()
-
         if not application:
             return {"message": "Application not found"}, 404
 
@@ -282,7 +266,6 @@ class ApplicationDetailResource(Resource):
 
     def delete(self, id):
         application = Application.query.get(id)
-
         if not application:
             return {"message": "Application not found"}, 404
 
@@ -293,11 +276,12 @@ class ApplicationDetailResource(Resource):
 
 api.add_resource(ApplicationDetailResource, '/applications/<int:id>')
 
-
+# Create tables
 def create_tables():
     db.create_all()
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
-    
+
+
 
